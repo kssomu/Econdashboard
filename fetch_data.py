@@ -8,20 +8,27 @@ from datetime import datetime, timedelta, timezone
 EODHD_API_KEY = os.environ.get("EODHD_API_KEY", "demo")
 METALPRICE_API_KEY = os.environ.get("METALPRICE_API_KEY")
 
-def get_eodhd_macro(country_iso3, indicator):
-    url = f"https://eodhd.com/api/macro-indicator/{country_iso3}?api_token={EODHD_API_KEY}&fmt=json&indicator={indicator}"
+def get_worldbank_data(country_iso2, indicator, is_gdp=False):
+    """Fetches macro data using the free World Bank API."""
+    url = f"https://api.worldbank.org/v2/country/{country_iso2}/indicator/{indicator}?format=json&mrnev=1"
     try:
-        res = requests.get(url, timeout=10).json()
-        if res and isinstance(res, list) and len(res) > 0:
-            val = res[0]['Value']
-            date = res[0]['Date'][:4] # Extract year
-            if indicator == 'gdp_current_usd':
-                val = f"${val / 1e9:.2f}B"
+        # User-Agent header helps bypass strict datacenter blocks
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        res = requests.get(url, headers=headers, timeout=10).json()
+        
+        # World Bank JSON returns metadata in index 0, data in index 1
+        if len(res) > 1 and res[1]:
+            val = res[1][0]['value']
+            date = res[1][0]['date']
+            
+            if val is None:
+                return "N/A"
+            if is_gdp:
+                return f"${val / 1e9:.2f}B ({date})"
             else:
-                val = f"{val:.2f}%"
-            return f"{val} ({date})"
+                return f"{val:.2f}% ({date})"
     except Exception as e:
-        print(f"Error fetching EODHD macro for {country_iso3}: {e}")
+        print(f"Error fetching WB data for {country_iso2}: {e}")
     return "N/A"
 
 def get_eodhd_bond(ticker):
@@ -70,14 +77,14 @@ def main():
         "last_updated": datetime.now(ist).strftime("%Y-%m-%d %I:%M %p IST"),
         "table1": {
             "GDP": {
-                "India": get_eodhd_macro("IND", "gdp_current_usd"),
-                "US": get_eodhd_macro("USA", "gdp_current_usd"),
-                "China": get_eodhd_macro("CHN", "gdp_current_usd")
+                "India": get_worldbank_data("IN", "NY.GDP.MKTP.CD", is_gdp=True),
+                "US": get_worldbank_data("US", "NY.GDP.MKTP.CD", is_gdp=True),
+                "China": get_worldbank_data("CN", "NY.GDP.MKTP.CD", is_gdp=True)
             },
             "Debt to GDP": {
-                "India": get_eodhd_macro("IND", "debt_percent_gdp"),
-                "US": get_eodhd_macro("USA", "debt_percent_gdp"),
-                "China": get_eodhd_macro("CHN", "debt_percent_gdp")
+                "India": get_worldbank_data("IN", "GC.DOD.TOTL.GD.ZS", is_gdp=False),
+                "US": get_worldbank_data("US", "GC.DOD.TOTL.GD.ZS", is_gdp=False),
+                "China": get_worldbank_data("CN", "GC.DOD.TOTL.GD.ZS", is_gdp=False)
             },
             "Market Cap (Index Proxy)": {
                 "India": get_yfinance_data("^NSEI"),
