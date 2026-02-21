@@ -1,13 +1,13 @@
 {
-    "last_updated": "2026-02-21 05:46 PM IST",
+    "last_updated": "2026-02-21 06:01 PM IST",
     "table1": {
         "GDP": {
-            "India": "N/A",
-            "US": "N/A",
-            "China": "N/A"
+            "India": "$3909.89B (2024)",
+            "US": "$28750.96B (2024)",
+            "China": "$18743.80B (2024)"
         },
         "Debt to GDP": {
-            "India": "N/A",
+            "India": "46.52% (2018)",
             "US": "N/A",
             "China": "N/A"
         },
